@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>바코드 검색기</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        color: #666;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #status {
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 4px;
+        display: none;
+      }
+      .success {
+        background-color: #dff0d8;
+        color: #3c763d;
+        display: block;
+      }
+      .error {
+        background-color: #f2dede;
+        color: #a94442;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>바코드 검색기</h1>
+      <div class="form-group">
+        <label for="url">웹페이지 URL:</label>
+        <input type="text" id="url" placeholder="https://example.com" />
+      </div>
+      <div class="form-group">
+        <label for="barcode">바코드:</label>
+        <input type="text" id="barcode" placeholder="바코드를 입력하세요" />
+      </div>
+      <button onclick="startSearch()">검색 시작</button>
+      <div id="status"></div>
+    </div>
+
+    <script>
+      function showStatus(message, isError = false) {
+        const status = document.getElementById("status");
+        status.textContent = message;
+        status.className = isError ? "error" : "success";
+      }
+
+      async function startSearch() {
+        const url = document.getElementById("url").value;
+        const barcode = document.getElementById("barcode").value;
+
+        if (!url || !barcode) {
+          showStatus("URL과 바코드를 모두 입력해주세요.", true);
+          return;
+        }
+
+        try {
+          const response = await fetch("/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ url, barcode }),
+          });
+
+          const result = await response.json();
+          showStatus(result.message, !result.success);
+        } catch (error) {
+          showStatus("검색 중 오류가 발생했습니다: " + error.message, true);
+        }
+      }
+
+      // 바코드 입력 필드에서 Enter 키 처리
+      document
+        .getElementById("barcode")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            startSearch();
+          }
+        });
+    </script>
+  </body>
+</html>
