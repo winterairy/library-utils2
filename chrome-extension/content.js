@@ -93,4 +93,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return true;
   }
+  if (request.action === "check-checkbox-by-barcode") {
+    const barcode = request.barcode;
+    // 모든 테이블 row를 찾음
+    const rows = document.querySelectorAll("table tr");
+    let checked = false;
+    rows.forEach((row) => {
+      // 체크박스와 등록번호 셀을 찾음 (구조에 따라 인덱스 조정)
+      const checkbox = row.querySelector('input[type="checkbox"]');
+      const tds = row.querySelectorAll("td");
+      if (tds.length < 2) return; // 구조에 따라 조정
+      const regNum = tds[1].textContent.trim(); // 두 번째 셀에 등록번호가 있다고 가정
+      if (regNum === barcode && checkbox) {
+        checkbox.checked = true; // 또는 checkbox.click();
+        checked = true;
+      }
+    });
+    sendResponse({
+      success: checked,
+      message: checked
+        ? "체크박스를 체크했습니다!"
+        : "일치하는 등록번호가 없습니다.",
+    });
+    return true;
+  }
 });
