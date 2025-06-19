@@ -21,8 +21,8 @@ function searchBarcode() {
   const letters = barcode.replace(/[^A-Za-z]/g, "");
   // 숫자만 추출
   let numbers = barcode.replace(/[A-Za-z]/g, "");
-  if (numbers.length === 8) {
-    numbers = numbers.slice(2);
+  if (numbers.length === 6) {
+    numbers = "0000" + numbers;
   }
   const processedBarcode = letters + numbers;
 
