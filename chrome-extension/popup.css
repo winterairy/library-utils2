@@ -72,4 +72,9 @@ button:hover {
   margin-top: 18px;
   color: #6d6c71;
   font-size: 15px;
+  text-align: right;
+}
+.success-number {
+  color: #f26e21;
+  font-weight: bold;
 }

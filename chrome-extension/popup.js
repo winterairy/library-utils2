@@ -51,12 +51,15 @@ function searchBarcode() {
           );
           return;
         }
-        if (response.success) {
+        if (response.success === true) {
           showStatus(response.message, "success");
           // 성공 횟수 누적 및 저장/표시
           successCount++;
           chrome.storage.local.set({ successCount: successCount });
           updateSuccessCount();
+        } else if (response.success === "duplicate") {
+          showStatus(response.message, "info");
+          // 성공 횟수는 누적시키지 않음
         } else {
           showStatus(response.message, "error");
           if (chrome.notifications) {
@@ -76,7 +79,7 @@ function searchBarcode() {
 function updateSuccessCount() {
   const div = document.getElementById("successCount");
   if (successCount > 0) {
-    div.textContent = "검색 성공한 횟수: " + successCount;
+    div.innerHTML = `검색 성공한 횟수: <span class="success-number">${successCount}</span>`;
   } else {
     div.textContent = "";
   }
