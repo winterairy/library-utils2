@@ -191,7 +191,7 @@
         showStatus("브라우저를 초기화하는 중...", "info");
 
         try {
-          const result = await ipcRenderer.invoke("init-browser");
+          const result = await ipcRenderer.invoke("init-browser", currentUrl);
           if (result.success) {
             showStatus("브라우저가 초기화되었습니다.", "success");
             searchBtn.disabled = false;
