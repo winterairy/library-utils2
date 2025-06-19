@@ -12,16 +12,25 @@ function showStatus(message, type = "info") {
 }
 
 function searchBarcode() {
-  const barcode = document.getElementById("barcode").value.trim();
+  let barcode = document.getElementById("barcode").value.trim();
   if (!barcode) {
     showStatus("바코드를 입력하세요.", "error");
     return;
   }
+  // 영문 추출
+  const letters = barcode.replace(/[^A-Za-z]/g, "");
+  // 숫자만 추출
+  let numbers = barcode.replace(/[A-Za-z]/g, "");
+  if (numbers.length === 8) {
+    numbers = numbers.slice(2);
+  }
+  const processedBarcode = letters + numbers;
+
   showStatus("검색 중...", "info");
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     chrome.tabs.sendMessage(
       tabs[0].id,
-      { action: "search-barcode", barcode },
+      { action: "search-barcode", barcode: processedBarcode },
       function (response) {
         if (!response) {
           showStatus(
@@ -37,7 +46,7 @@ function searchBarcode() {
           if (chrome.notifications) {
             chrome.notifications.create({
               type: "basic",
-              iconUrl: "icon48.png",
+              iconUrl: "icons/icon48.png",
               title: "검색 결과",
               message: "일치하는 등록번호가 없습니다.",
             });
