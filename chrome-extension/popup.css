@@ -68,3 +68,8 @@ button:hover {
   color: #31708f;
   display: block;
 }
+#successCount {
+  margin-top: 18px;
+  color: #6d6c71;
+  font-size: 15px;
+}

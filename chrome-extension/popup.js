@@ -11,8 +11,18 @@ function showStatus(message, type = "info") {
   status.style.display = "block";
 }
 
+// 누적 성공 횟수 저장
+let successCount = 0;
+
+// storage에서 성공 횟수 불러오기
+chrome.storage.local.get(["successCount"], function (result) {
+  successCount = result.successCount || 0;
+  updateSuccessCount();
+});
+
 function searchBarcode() {
-  let barcode = document.getElementById("barcode").value.trim();
+  let barcodeInput = document.getElementById("barcode");
+  let barcode = barcodeInput.value.trim();
   if (!barcode) {
     showStatus("바코드를 입력하세요.", "error");
     return;
@@ -32,6 +42,8 @@ function searchBarcode() {
       tabs[0].id,
       { action: "search-barcode", barcode: processedBarcode },
       function (response) {
+        // 검색 후 입력창 초기화
+        barcodeInput.value = "";
         if (!response) {
           showStatus(
             "확장 프로그램 권한 또는 CSP 문제로 content script가 동작하지 않습니다.",
@@ -41,6 +53,10 @@ function searchBarcode() {
         }
         if (response.success) {
           showStatus(response.message, "success");
+          // 성공 횟수 누적 및 저장/표시
+          successCount++;
+          chrome.storage.local.set({ successCount: successCount });
+          updateSuccessCount();
         } else {
           showStatus(response.message, "error");
           if (chrome.notifications) {
@@ -55,4 +71,13 @@ function searchBarcode() {
       }
     );
   });
+}
+
+function updateSuccessCount() {
+  const div = document.getElementById("successCount");
+  if (successCount > 0) {
+    div.textContent = "검색 성공한 횟수: " + successCount;
+  } else {
+    div.textContent = "";
+  }
 }
