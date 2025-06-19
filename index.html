@@ -48,9 +48,36 @@
         cursor: pointer;
         font-size: 16px;
         width: 100%;
+        margin-bottom: 10px;
       }
       button:hover {
         background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      .url-section {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .url-section input {
+        flex: 1;
+      }
+      .url-section button {
+        width: auto;
+        margin-bottom: 0;
+      }
+      .current-url {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        border-left: 4px solid #4caf50;
+      }
+      .current-url strong {
+        color: #333;
       }
       #status {
         margin-top: 20px;
@@ -68,52 +95,161 @@
         color: #a94442;
         display: block;
       }
+      .info {
+        background-color: #d9edf7;
+        color: #31708f;
+        display: block;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>바코드 검색기</h1>
-      <div class="form-group">
-        <label for="url">웹페이지 URL:</label>
-        <input type="text" id="url" placeholder="https://example.com" />
+
+      <!-- 현재 URL 표시 -->
+      <div id="currentUrlDisplay" class="current-url" style="display: none">
+        <strong>현재 URL:</strong> <span id="currentUrlText"></span>
       </div>
+
+      <!-- URL 입력 섹션 -->
+      <div id="urlInputSection">
+        <div class="form-group">
+          <label for="url">웹페이지 URL:</label>
+          <div class="url-section">
+            <input type="text" id="url" placeholder="https://example.com" />
+            <button onclick="setUrl()" id="setUrlBtn">URL 설정</button>
+          </div>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="barcode">바코드:</label>
         <input type="text" id="barcode" placeholder="바코드를 입력하세요" />
       </div>
-      <button onclick="startSearch()">검색 시작</button>
+
+      <button onclick="initBrowser()" id="initBtn">브라우저 초기화</button>
+      <button onclick="startSearch()" id="searchBtn" disabled>검색 시작</button>
+      <button onclick="closeBrowser()" id="closeBtn" disabled>
+        브라우저 종료
+      </button>
+      <button
+        onclick="changeUrl()"
+        id="changeUrlBtn"
+        style="background-color: #ff9800"
+      >
+        URL 변경
+      </button>
+
       <div id="status"></div>
     </div>
 
     <script>
-      function showStatus(message, isError = false) {
+      const { ipcRenderer } = require("electron");
+      let currentUrl = "";
+
+      function showStatus(message, type = "info") {
         const status = document.getElementById("status");
         status.textContent = message;
-        status.className = isError ? "error" : "success";
+        status.className = type;
       }
 
-      async function startSearch() {
-        const url = document.getElementById("url").value;
-        const barcode = document.getElementById("barcode").value;
-
-        if (!url || !barcode) {
-          showStatus("URL과 바코드를 모두 입력해주세요.", true);
+      function setUrl() {
+        const url = document.getElementById("url").value.trim();
+        if (!url) {
+          showStatus("URL을 입력해주세요.", "error");
           return;
         }
 
-        try {
-          const response = await fetch("/search", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ url, barcode }),
-          });
+        currentUrl = url;
+        document.getElementById("currentUrlText").textContent = url;
+        document.getElementById("currentUrlDisplay").style.display = "block";
+        document.getElementById("urlInputSection").style.display = "none";
+        document.getElementById("changeUrlBtn").style.display = "block";
 
-          const result = await response.json();
-          showStatus(result.message, !result.success);
+        showStatus("URL이 설정되었습니다.", "success");
+      }
+
+      function changeUrl() {
+        document.getElementById("urlInputSection").style.display = "block";
+        document.getElementById("currentUrlDisplay").style.display = "none";
+        document.getElementById("changeUrlBtn").style.display = "none";
+        document.getElementById("url").value = currentUrl;
+        document.getElementById("url").focus();
+      }
+
+      async function initBrowser() {
+        if (!currentUrl) {
+          showStatus("먼저 URL을 설정해주세요.", "error");
+          return;
+        }
+
+        const initBtn = document.getElementById("initBtn");
+        const searchBtn = document.getElementById("searchBtn");
+        const closeBtn = document.getElementById("closeBtn");
+
+        initBtn.disabled = true;
+        showStatus("브라우저를 초기화하는 중...", "info");
+
+        try {
+          const result = await ipcRenderer.invoke("init-browser");
+          if (result.success) {
+            showStatus("브라우저가 초기화되었습니다.", "success");
+            searchBtn.disabled = false;
+            closeBtn.disabled = false;
+          } else {
+            showStatus("브라우저 초기화 실패: " + result.error, "error");
+            initBtn.disabled = false;
+          }
         } catch (error) {
-          showStatus("검색 중 오류가 발생했습니다: " + error.message, true);
+          showStatus(
+            "브라우저 초기화 중 오류가 발생했습니다: " + error.message,
+            "error"
+          );
+          initBtn.disabled = false;
+        }
+      }
+
+      async function startSearch() {
+        const barcode = document.getElementById("barcode").value;
+
+        if (!barcode) {
+          showStatus("바코드를 입력해주세요.", "error");
+          return;
+        }
+
+        const searchBtn = document.getElementById("searchBtn");
+        searchBtn.disabled = true;
+        showStatus("검색 중...", "info");
+
+        try {
+          const result = await ipcRenderer.invoke("search-barcode", {
+            url: currentUrl,
+            barcode,
+          });
+          showStatus(result.message, result.success ? "success" : "error");
+        } catch (error) {
+          showStatus("검색 중 오류가 발생했습니다: " + error.message, "error");
+        } finally {
+          searchBtn.disabled = false;
+        }
+      }
+
+      async function closeBrowser() {
+        const initBtn = document.getElementById("initBtn");
+        const searchBtn = document.getElementById("searchBtn");
+        const closeBtn = document.getElementById("closeBtn");
+
+        try {
+          await ipcRenderer.invoke("close-browser");
+          showStatus("브라우저가 종료되었습니다.", "info");
+          searchBtn.disabled = true;
+          closeBtn.disabled = true;
+          initBtn.disabled = false;
+        } catch (error) {
+          showStatus(
+            "브라우저 종료 중 오류가 발생했습니다: " + error.message,
+            "error"
+          );
         }
       }
 
@@ -125,6 +261,13 @@
             startSearch();
           }
         });
+
+      // URL 입력 필드에서 Enter 키 처리
+      document.getElementById("url").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          setUrl();
+        }
+      });
     </script>
   </body>
 </html>

@@ -2,12 +2,13 @@
   "name": "barcode-finder",
   "version": "1.0.0",
   "description": "바코드 등록번호 검색 도구",
-  "main": "barcode_finder.js",
+  "main": "main.js",
   "scripts": {
-    "start": "node barcode_finder.js"
+    "start": "electron .",
+    "dev": "electron . --dev"
   },
   "dependencies": {
     "puppeteer": "^22.0.0",
-    "express": "^4.18.2"
+    "electron": "^28.0.0"
   }
 }
