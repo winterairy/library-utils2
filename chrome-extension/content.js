@@ -3,6 +3,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const barcode = request.barcode;
     let found = false;
     let firstMark = null;
+    let duplicate = false;
 
     // 하이라이트 스타일이 이미 있으면 추가하지 않음
     if (!document.getElementById("barcode-highlight-style")) {
@@ -15,6 +16,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
             `;
       document.head.appendChild(style);
+    }
+
+    // 이미 하이라이트된 부분에 등록번호가 있는지 먼저 확인
+    const highlighted = document.querySelectorAll(".highlight");
+    highlighted.forEach((el) => {
+      if (el.textContent === barcode) {
+        duplicate = true;
+      }
+    });
+    if (duplicate) {
+      sendResponse({
+        success: "duplicate",
+        message: `${barcode}는 이미 검색했어요.`,
+      });
+      return true;
     }
 
     // 이미 하이라이트된 부분은 중복 감싸지 않음
@@ -67,12 +83,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (found) {
       sendResponse({
         success: true,
-        message: `등록번호 ${barcode}를 찾았습니다!`,
+        message: `${barcode}가 있어요🥳 발송 완료!`,
       });
     } else {
       sendResponse({
         success: false,
-        message: `등록번호 ${barcode}를 찾을 수 없습니다.`,
+        message: `${barcode}가 없어요🥲 발송 필요!`,
       });
     }
     return true;
