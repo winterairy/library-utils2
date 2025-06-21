@@ -7,15 +7,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     // 하이라이트 스타일이 이미 있으면 추가하지 않음
     if (!document.getElementById("barcode-highlight-style")) {
-      const style = document.createElement("style");
-      style.id = "barcode-highlight-style";
-      style.textContent = `
+      try {
+        const style = document.createElement("style");
+        style.id = "barcode-highlight-style";
+        style.textContent = `
                 .highlight {
                     background-color: yellow;
                     font-weight: bold;
                 }
             `;
-      document.head.appendChild(style);
+        document.head.appendChild(style);
+      } catch (e) {
+        console.warn("스타일 적용 중 CSP 제한:", e);
+      }
     }
 
     // 이미 하이라이트된 부분에 등록번호가 있는지 먼저 확인
@@ -51,34 +55,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       if (node.textContent.includes(barcode)) {
         found = true;
-        const span = document.createElement("span");
-        let lastIndex = 0;
-        let idx;
-        while ((idx = node.textContent.indexOf(barcode, lastIndex)) !== -1) {
-          if (idx > lastIndex) {
+        try {
+          const span = document.createElement("span");
+          let lastIndex = 0;
+          let idx;
+          while ((idx = node.textContent.indexOf(barcode, lastIndex)) !== -1) {
+            if (idx > lastIndex) {
+              span.appendChild(
+                document.createTextNode(node.textContent.slice(lastIndex, idx))
+              );
+            }
+            const mark = document.createElement("span");
+            mark.className = "highlight";
+            mark.textContent = barcode;
+            span.appendChild(mark);
+            if (!firstMark) firstMark = mark;
+            lastIndex = idx + barcode.length;
+          }
+          if (lastIndex < node.textContent.length) {
             span.appendChild(
-              document.createTextNode(node.textContent.slice(lastIndex, idx))
+              document.createTextNode(node.textContent.slice(lastIndex))
             );
           }
-          const mark = document.createElement("span");
-          mark.className = "highlight";
-          mark.textContent = barcode;
-          span.appendChild(mark);
-          if (!firstMark) firstMark = mark;
-          lastIndex = idx + barcode.length;
+          node.parentNode.insertBefore(span, node);
+          node.parentNode.removeChild(node);
+        } catch (e) {
+          console.warn("DOM 조작 중 CSP 제한:", e);
         }
-        if (lastIndex < node.textContent.length) {
-          span.appendChild(
-            document.createTextNode(node.textContent.slice(lastIndex))
-          );
-        }
-        node.parentNode.insertBefore(span, node);
-        node.parentNode.removeChild(node);
       }
     }
     // 첫 번째 하이라이트로 스크롤
     if (firstMark) {
-      firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+      try {
+        firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+      } catch (e) {
+        console.warn("스크롤 중 CSP 제한:", e);
+      }
     }
     if (found) {
       sendResponse({
@@ -105,8 +117,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (tds.length < 2) return; // 구조에 따라 조정
       const regNum = tds[1].textContent.trim(); // 두 번째 셀에 등록번호가 있다고 가정
       if (regNum === barcode && checkbox) {
-        checkbox.checked = true; // 또는 checkbox.click();
-        checked = true;
+        try {
+          checkbox.checked = true; // 또는 checkbox.click();
+          checked = true;
+        } catch (e) {
+          console.warn("체크박스 조작 중 CSP 제한:", e);
+        }
       }
     });
     sendResponse({

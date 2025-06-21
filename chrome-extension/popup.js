@@ -59,7 +59,7 @@ function searchBarcode() {
               showStatus(highlightResponse.message, "success");
               // 성공 횟수 누적 및 저장/표시
               successCount++;
-              chrome.storage.local.set({ successCount: successCount });
+              localStorage.setItem("successCount", successCount.toString());
               updateSuccessCount();
             } else if (highlightResponse.success === "duplicate") {
               showStatus(highlightResponse.message, "info");
