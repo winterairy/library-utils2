@@ -14,11 +14,9 @@ function showStatus(message, type = "info") {
 // 누적 성공 횟수 저장
 let successCount = 0;
 
-// storage에서 성공 횟수 불러오기
-chrome.storage.local.get(["successCount"], function (result) {
-  successCount = result.successCount || 0;
-  updateSuccessCount();
-});
+// localStorage에서 성공 횟수 불러오기
+successCount = parseInt(localStorage.getItem("successCount")) || 0;
+updateSuccessCount();
 
 function searchBarcode() {
   let barcodeInput = document.getElementById("barcode");
@@ -55,7 +53,7 @@ function searchBarcode() {
           showStatus(response.message, "success");
           // 성공 횟수 누적 및 저장/표시
           successCount++;
-          chrome.storage.local.set({ successCount: successCount });
+          localStorage.setItem("successCount", successCount.toString());
           updateSuccessCount();
         } else {
           showStatus(response.message, "error");
