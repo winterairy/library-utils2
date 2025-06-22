@@ -37,21 +37,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
-    // 이미 하이라이트된 부분에 등록번호가 있는지 먼저 확인
-    const highlighted = document.querySelectorAll(".highlight");
-    highlighted.forEach((el) => {
-      if (el.textContent === barcode) {
-        duplicate = true;
-      }
-    });
-    if (duplicate) {
-      sendResponse({
-        success: "duplicate",
-        message: `${barcode}는 이미 검색했어요.`,
-      });
-      return true;
-    }
-
     // 이미 하이라이트된 부분은 중복 감싸지 않음
     const walker = document.createTreeWalker(
       document.body,
