@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "바코드 등록번호 검색기",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "웹페이지에서 바코드(등록번호)를 검색하고 하이라이트합니다.",
   "permissions": ["scripting", "activeTab", "notifications", "tabs"],
   "host_permissions": ["<all_urls>"],
