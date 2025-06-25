@@ -107,29 +107,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   if (request.action === "check-checkbox-by-barcode") {
     const barcode = request.barcode;
-    // 등록번호-행 매핑 캐시
-    if (!window.barcodeRowMap) {
-      window.barcodeRowMap = new Map();
-      const rows = document.querySelectorAll("table tr");
-      rows.forEach((row) => {
-        const tds = row.querySelectorAll("td");
-        if (tds.length < 2) return;
-        const regNum = tds[1].textContent.trim();
-        window.barcodeRowMap.set(regNum, row);
-      });
-    }
     let checked = false;
-    const row = window.barcodeRowMap.get(barcode);
-    if (row) {
-      const checkbox = row.querySelector('input[type="checkbox"]');
-      if (checkbox && !checkbox.checked) {
-        checkbox.click();
+    
+    // 등록번호를 id로 가진 체크박스를 직접 찾습니다
+    const checkbox = document.querySelector(`input[type="checkbox"][id="${barcode}"]`);
+    
+    if (checkbox) {
+      try {
+        if (!checkbox.checked) {
+          checkbox.click();
+        }
+        checked = true;
+      } catch (e) {
+        // 오류가 발생할 경우 checked 값이 false로 유지됩니다
       }
-      if (!row.classList.contains("on")) {
-        row.classList.add("on");
-      }
-      checked = true;
     }
+    
     sendResponse({
       success: checked,
       message: checked
