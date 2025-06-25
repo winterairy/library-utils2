@@ -14,9 +14,14 @@ function showStatus(message, type = "info") {
 // 누적 성공 횟수 저장
 let successCount = 0;
 
-// localStorage에서 성공 횟수 불러오기
-successCount = parseInt(localStorage.getItem("successCount")) || 0;
-updateSuccessCount();
+// localStorage에서 성공 횟수 불러오기 (popup이 열릴 때마다 실행)
+function loadSuccessCount() {
+  successCount = parseInt(localStorage.getItem("successCount")) || 0;
+  updateSuccessCount();
+}
+
+// popup이 열릴 때마다 성공 횟수 로드
+loadSuccessCount();
 
 function searchBarcode() {
   let barcodeInput = document.getElementById("barcode");
@@ -41,7 +46,7 @@ function searchBarcode() {
     chrome.scripting.executeScript(
       {
         target: { tabId: tabId },
-        files: ["content.js"]
+        files: ["content.js"],
       },
       () => {
         // 1. 하이라이트/스크롤
@@ -52,7 +57,10 @@ function searchBarcode() {
             // 2. 체크박스 체크
             chrome.tabs.sendMessage(
               tabId,
-              { action: "check-checkbox-by-barcode", barcode: processedBarcode },
+              {
+                action: "check-checkbox-by-barcode",
+                barcode: processedBarcode,
+              },
               function (checkboxResponse) {
                 // 검색 후 입력창 초기화
                 barcodeInput.value = "";
