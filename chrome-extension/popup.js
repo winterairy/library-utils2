@@ -36,45 +36,55 @@ function searchBarcode() {
 
   showStatus("검색 중...", "info");
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    // 1. 하이라이트/스크롤
-    chrome.tabs.sendMessage(
-      tabs[0].id,
-      { action: "search-barcode", barcode: processedBarcode },
-      function (highlightResponse) {
-        // 2. 체크박스 체크
+    const tabId = tabs[0].id;
+    // content.js를 강제로 주입
+    chrome.scripting.executeScript(
+      {
+        target: { tabId: tabId },
+        files: ["content.js"]
+      },
+      () => {
+        // 1. 하이라이트/스크롤
         chrome.tabs.sendMessage(
-          tabs[0].id,
-          { action: "check-checkbox-by-barcode", barcode: processedBarcode },
-          function (checkboxResponse) {
-            // 검색 후 입력창 초기화
-            barcodeInput.value = "";
-            if (!highlightResponse) {
-              showStatus(
-                "확장 프로그램 권한 또는 CSP 문제로 content script가 동작하지 않습니다.",
-                "error"
-              );
-              return;
-            }
-            if (highlightResponse.success === true) {
-              showStatus(highlightResponse.message, "success");
-              // 성공 횟수 누적 및 저장/표시
-              successCount++;
-              localStorage.setItem("successCount", successCount.toString());
-              updateSuccessCount();
-            } else if (highlightResponse.success === "duplicate") {
-              showStatus(highlightResponse.message, "info");
-              // 성공 횟수는 누적시키지 않음
-            } else {
-              showStatus(highlightResponse.message, "error");
-              if (chrome.notifications) {
-                chrome.notifications.create({
-                  type: "basic",
-                  iconUrl: "icons/icon48.png",
-                  title: "검색 결과",
-                  message: "일치하는 등록번호가 없습니다.",
-                });
+          tabId,
+          { action: "search-barcode", barcode: processedBarcode },
+          function (highlightResponse) {
+            // 2. 체크박스 체크
+            chrome.tabs.sendMessage(
+              tabId,
+              { action: "check-checkbox-by-barcode", barcode: processedBarcode },
+              function (checkboxResponse) {
+                // 검색 후 입력창 초기화
+                barcodeInput.value = "";
+                if (!highlightResponse) {
+                  showStatus(
+                    "확장 프로그램 권한 또는 CSP 문제로 content script가 동작하지 않습니다.",
+                    "error"
+                  );
+                  return;
+                }
+                if (highlightResponse.success === true) {
+                  showStatus(highlightResponse.message, "success");
+                  // 성공 횟수 누적 및 저장/표시
+                  successCount++;
+                  localStorage.setItem("successCount", successCount.toString());
+                  updateSuccessCount();
+                } else if (highlightResponse.success === "duplicate") {
+                  showStatus(highlightResponse.message, "info");
+                  // 성공 횟수는 누적시키지 않음
+                } else {
+                  showStatus(highlightResponse.message, "error");
+                  if (chrome.notifications) {
+                    chrome.notifications.create({
+                      type: "basic",
+                      iconUrl: "icons/icon48.png",
+                      title: "검색 결과",
+                      message: "일치하는 등록번호가 없습니다.",
+                    });
+                  }
+                }
               }
-            }
+            );
           }
         );
       }
