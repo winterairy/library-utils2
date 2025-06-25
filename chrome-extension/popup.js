@@ -12,16 +12,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ====== [3] 성공 횟수 로드 및 표시 ======
 function loadSuccessCount() {
-  successCount = parseInt(localStorage.getItem("successCount")) || 0;
-  updateSuccessCount();
+  chrome.storage.local.get(["successCount"], (result) => {
+    successCount = result.successCount || 0;
+    updateSuccessCount();
+  });
 }
 
 function updateSuccessCount() {
   const div = document.getElementById("successCount");
   if (successCount > 0) {
-    div.innerHTML = `검색 성공한 횟수: <span class="success-number">${successCount}</span>`;
+    div.innerHTML = `검색 성공: <span class="success-number">${successCount}</span>`;
   } else {
-    div.textContent = "";
+    div.innerHTML = `검색 성공: <span class="success-number">0</span>`;
   }
 }
 
@@ -35,8 +37,12 @@ function searchBarcode() {
   }
   const processedBarcode = preprocessBarcode(barcode);
   showStatus("검색 중...", "info");
+
+  // 현재 탭에서 작업 시작을 background에 알림
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tabId = tabs[0].id;
+    chrome.runtime.sendMessage({ action: "start-work", tabId: tabId });
+
     chrome.scripting.executeScript(
       { target: { tabId }, files: ["content.js"] },
       () => {
@@ -81,7 +87,7 @@ function handleSearchResult(highlightResponse) {
   if (highlightResponse.success === true) {
     showStatus(highlightResponse.message, "success");
     successCount++;
-    localStorage.setItem("successCount", successCount.toString());
+    chrome.storage.local.set({ successCount: successCount });
     updateSuccessCount();
   } else if (highlightResponse.success === "duplicate") {
     showStatus(highlightResponse.message, "info");
