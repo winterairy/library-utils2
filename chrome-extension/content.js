@@ -1,3 +1,14 @@
+import {
+  checkAndMarkCheckbox,
+  checkAndMarkCheckboxByBarcode,
+} from "./checkCheckbox.js";
+import {
+  highlightRow,
+  ensureHighlightStyle,
+  isBarcodeAlreadyHighlighted,
+  highlightBarcodeInDocument,
+} from "./highlightElement.js";
+
 // ====== [1] 메시지 리스너 등록 (시점별) ======
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "search-barcode") {
@@ -43,103 +54,9 @@ function handleSearchBarcode(barcode, sendResponse) {
   }
 }
 
-function ensureHighlightStyle() {
-  if (!document.getElementById("barcode-highlight-style")) {
-    try {
-      const style = document.createElement("style");
-      style.id = "barcode-highlight-style";
-      style.textContent = `
-        .highlight {
-          background-color: yellow;
-          font-weight: bold;
-        }
-      `;
-      document.head.appendChild(style);
-      return true;
-    } catch (e) {
-      console.warn("스타일 적용 중 CSP 제한:", e);
-      return false;
-    }
-  }
-  return true;
-}
-
-function isBarcodeAlreadyHighlighted(barcode) {
-  const highlighted = document.querySelectorAll(".highlight");
-  for (const el of highlighted) {
-    if (el.textContent === barcode) return true;
-  }
-  return false;
-}
-
-function highlightBarcodeInDocument(barcode) {
-  const walker = document.createTreeWalker(
-    document.body,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-  let node;
-  let found = false;
-  let firstMark = null;
-  while ((node = walker.nextNode())) {
-    if (
-      node.parentNode &&
-      node.parentNode.classList &&
-      node.parentNode.classList.contains("highlight")
-    ) {
-      continue;
-    }
-    if (node.textContent.includes(barcode)) {
-      found = true;
-      try {
-        const span = document.createElement("span");
-        let lastIndex = 0;
-        let idx;
-        while ((idx = node.textContent.indexOf(barcode, lastIndex)) !== -1) {
-          if (idx > lastIndex) {
-            span.appendChild(
-              document.createTextNode(node.textContent.slice(lastIndex, idx))
-            );
-          }
-          const mark = document.createElement("span");
-          mark.className = "highlight";
-          mark.textContent = barcode;
-          span.appendChild(mark);
-          if (!firstMark) firstMark = mark;
-          lastIndex = idx + barcode.length;
-        }
-        if (lastIndex < node.textContent.length) {
-          span.appendChild(
-            document.createTextNode(node.textContent.slice(lastIndex))
-          );
-        }
-        node.parentNode.insertBefore(span, node);
-        node.parentNode.removeChild(node);
-      } catch (e) {
-        console.warn("DOM 조작 중 CSP 제한:", e);
-      }
-    }
-  }
-  return { found, firstMark };
-}
-
 // ====== [3] 체크박스 처리 (조건별) ======
 function handleCheckCheckbox(barcode, sendResponse) {
-  let checked = false;
-  const checkbox = document.querySelector(
-    `input[type="checkbox"][id="${barcode}"]`
-  );
-  if (checkbox) {
-    try {
-      if (!checkbox.checked) {
-        checkbox.click();
-      }
-      checked = true;
-    } catch (e) {
-      // 오류 발생 시 checked는 false로 유지
-    }
-  }
+  const checked = checkAndMarkCheckboxByBarcode(barcode);
   sendResponse({
     success: checked,
     message: checked
@@ -147,3 +64,19 @@ function handleCheckCheckbox(barcode, sendResponse) {
       : "일치하는 등록번호가 없습니다.",
   });
 }
+
+// 등록번호 찾기 예시 함수 (구현 필요)
+function findRegistrationNumberElements() {
+  // 실제 구현 필요: 등록번호가 포함된 row들을 반환
+  // 예시: return document.querySelectorAll('.registration-row');
+  return [];
+}
+
+const registrationRows = findRegistrationNumberElements();
+
+registrationRows.forEach((row) => {
+  const checked = checkAndMarkCheckbox(row);
+  if (!checked) {
+    highlightRow(row);
+  }
+});
