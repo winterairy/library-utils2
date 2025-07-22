@@ -15,7 +15,7 @@ class TableBarcodeHelper {
     let firstMark = null;
     rows.forEach((row) => {
       found = true;
-      row.style.backgroundColor = "yellow";
+      row.classList.add("highlight");
       if (!firstMark) firstMark = row;
     });
     return { found, firstMark };
@@ -39,6 +39,14 @@ class TableBarcodeHelper {
   }
 }
 
+function preprocessBarcode(barcode) {
+  const letters = barcode.replace(/[^A-Za-z]/g, "");
+  let numbers = barcode.replace(/[A-Za-z]/g, "");
+  if (numbers.length === 6) numbers = "0000" + numbers;
+  else if (numbers.length === 5) numbers = "00000" + numbers;
+  return letters + numbers;
+}
+
 // ====== [1] 메시지 리스너 등록 (시점별) ======
 const rowFinder = new TableBarcodeHelper(".table_10");
 
@@ -55,13 +63,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // ====== [2] 바코드 하이라이트 처리 (조건별) ======
 function handleSearchBarcode(barcode, sendResponse) {
-  if (!ensureHighlightStyle()) {
-    // 스타일 적용 실패 시에도 계속 진행
-  }
-  // 중복 하이라이트 방지: 이미 노란색인 row가 있으면 duplicate 처리
+  barcode = preprocessBarcode(barcode);
+  // 중복 하이라이트 방지: 이미 .highlight 클래스가 있으면 duplicate 처리
   const rows = rowFinder.findRows(barcode);
-  const alreadyHighlighted = rows.some(
-    (row) => row.style.backgroundColor === "yellow"
+  const alreadyHighlighted = rows.some((row) =>
+    row.classList.contains("highlight")
   );
   if (alreadyHighlighted) {
     sendResponse({
@@ -91,29 +97,9 @@ function handleSearchBarcode(barcode, sendResponse) {
   }
 }
 
-function ensureHighlightStyle() {
-  if (!document.getElementById("barcode-highlight-style")) {
-    try {
-      const style = document.createElement("style");
-      style.id = "barcode-highlight-style";
-      style.textContent = `
-        .highlight {
-          background-color: yellow;
-          font-weight: bold;
-        }
-      `;
-      document.head.appendChild(style);
-      return true;
-    } catch (e) {
-      console.warn("스타일 적용 중 CSP 제한:", e);
-      return false;
-    }
-  }
-  return true;
-}
-
 // ====== [3] 체크박스 처리 (조건별) ======
 function handleCheckCheckbox(barcode, sendResponse) {
+  barcode = preprocessBarcode(barcode);
   const result = rowFinder.checkCheckboxes(barcode);
   let message;
   if (result.hasCheckbox) {

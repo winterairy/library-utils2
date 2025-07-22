@@ -35,7 +35,7 @@ function searchBarcode() {
     showStatus("바코드를 입력하세요.", "error");
     return;
   }
-  const processedBarcode = preprocessBarcode(barcode);
+  // 전처리 없이 원본 barcode만 사용
   showStatus("검색 중...", "info");
 
   // 현재 탭에서 작업 시작을 background에 알림
@@ -48,13 +48,13 @@ function searchBarcode() {
       () => {
         chrome.tabs.sendMessage(
           tabId,
-          { action: "search-barcode", barcode: processedBarcode },
+          { action: "search-barcode", barcode: barcode },
           (highlightResponse) => {
             chrome.tabs.sendMessage(
               tabId,
               {
                 action: "check-checkbox-by-barcode",
-                barcode: processedBarcode,
+                barcode: barcode,
               },
               (checkboxResponse) => {
                 barcodeInput.value = "";
@@ -66,13 +66,6 @@ function searchBarcode() {
       }
     );
   });
-}
-
-function preprocessBarcode(barcode) {
-  const letters = barcode.replace(/[^A-Za-z]/g, "");
-  let numbers = barcode.replace(/[A-Za-z]/g, "");
-  if (numbers.length === 6) numbers = "0000" + numbers;
-  return letters + numbers;
 }
 
 // ====== [5] 검색 결과 처리 (조건별 분기) ======

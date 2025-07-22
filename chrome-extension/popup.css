@@ -79,3 +79,7 @@ button:hover {
   font-weight: bold;
   font-size: 18px;
 }
+.highlight {
+  background-color: yellow !important;
+  font-weight: bold;
+}
