@@ -1,5 +1,6 @@
 // ====== [1] 전역 변수 및 상태 ======
 let successCount = 0;
+let currentTabId = null;
 
 // ====== [2] 팝업이 열릴 때 실행 ======
 document.addEventListener("DOMContentLoaded", () => {
@@ -10,11 +11,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// ====== [3] 성공 횟수 로드 및 표시 ======
+// ====== [3] 성공 횟수 로드 및 표시 (탭별) ======
 function loadSuccessCount() {
-  chrome.storage.local.get(["successCount"], (result) => {
-    successCount = result.successCount || 0;
-    updateSuccessCount();
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    currentTabId = tabs[0].id;
+    const tabKey = `tab_${currentTabId}`;
+    chrome.storage.local.get([tabKey], (result) => {
+      successCount = result[tabKey]?.successCount || 0;
+      updateSuccessCount();
+    });
   });
 }
 
@@ -41,6 +46,7 @@ function searchBarcode() {
   // 현재 탭에서 작업 시작을 background에 알림
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tabId = tabs[0].id;
+    currentTabId = tabId; // 현재 탭 ID 업데이트
     chrome.runtime.sendMessage({ action: "start-work", tabId: tabId });
 
     chrome.scripting.executeScript(
@@ -80,7 +86,9 @@ function handleSearchResult(highlightResponse) {
   if (highlightResponse.success === true) {
     showStatus(highlightResponse.message, "success");
     successCount++;
-    chrome.storage.local.set({ successCount: successCount });
+    // 탭별로 카운트 저장
+    const tabKey = `tab_${currentTabId}`;
+    chrome.storage.local.set({ [tabKey]: { successCount: successCount } });
     updateSuccessCount();
   } else if (highlightResponse.success === "duplicate") {
     showStatus(highlightResponse.message, "info");

@@ -87,12 +87,12 @@ function handleSearchBarcode(barcode, sendResponse) {
   if (found.found) {
     sendResponse({
       success: true,
-      message: `${barcode}가 있어요🥳 발송 완료!`,
+      message: `${barcode}가 있어요!`,
     });
   } else {
     sendResponse({
       success: false,
-      message: `${barcode}가 없어요🥲 발송 필요!`,
+      message: `${barcode}가 없어요. 확인 필요!`,
     });
   }
 }
