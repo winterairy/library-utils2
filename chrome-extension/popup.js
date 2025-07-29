@@ -11,6 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+window.onload = function () {
+  setTimeout(function () {
+    document.getElementById("splash").style.display = "none";
+    document.getElementById("main-content").style.display = "block";
+  }, 2000); // 2초 후에 스플래시 화면 숨김
+};
+
 // ====== [3] 성공 횟수 로드 및 표시 (탭별) ======
 function loadSuccessCount() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
