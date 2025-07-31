@@ -1,12 +1,12 @@
 body {
   font-family: "Arial", sans-serif;
   min-width: 320px;
-  background: #f2f2f2;
+  background: #fff;
   margin: 0;
   padding: 0;
 }
 .container {
-  background: #f2f2f2;
+  background: #fff;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
@@ -82,7 +82,7 @@ button:hover {
 #splash {
   border: 5px solid #f26e21;
   font-weight: bold;
-  background: #f2f2f2;
+  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
