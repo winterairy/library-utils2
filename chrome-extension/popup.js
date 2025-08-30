@@ -1,10 +1,9 @@
-// ====== [1] 전역 변수 및 상태 ======
 let successCount = 0;
 let currentTabId = null;
 
-// ====== [2] 팝업이 열릴 때 실행 ======
+// 팝업이 열릴 때 실행
 document.addEventListener("DOMContentLoaded", () => {
-  loadSuccessCount();
+  initCount();
   document.getElementById("searchBtn").addEventListener("click", searchBarcode);
   document.getElementById("barcode").addEventListener("keypress", (e) => {
     if (e.key === "Enter") searchBarcode();
@@ -12,14 +11,14 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.onload = function () {
+  // 2초 후에 스플래시 화면 숨김
   setTimeout(function () {
     document.getElementById("splash").style.display = "none";
     document.getElementById("main-content").style.display = "block";
-  }, 2000); // 2초 후에 스플래시 화면 숨김
+  }, 2000); 
 };
 
-// ====== [3] 성공 횟수 로드 및 표시 (탭별) ======
-function loadSuccessCount() {
+function initCount() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     currentTabId = tabs[0].id;
     const tabKey = `tab_${currentTabId}`;
@@ -30,6 +29,8 @@ function loadSuccessCount() {
   });
 }
 
+
+ // 성공 횟수를 최신 값으로 업데이트 
 function updateSuccessCount() {
   const div = document.getElementById("successCount");
   if (successCount > 0) {
@@ -39,7 +40,10 @@ function updateSuccessCount() {
   }
 }
 
-// ====== [4] 바코드 검색 및 처리 ======
+/**
+ * 입력된 바코드 검색
+ * 성공 여부에 따라 상태 메시지와 카운트 관리
+ */
 function searchBarcode() {
   const barcodeInput = document.getElementById("barcode");
   const barcode = barcodeInput.value.trim();
@@ -47,18 +51,30 @@ function searchBarcode() {
     showStatus("바코드를 입력하세요.", "error");
     return;
   }
-  // 전처리 없이 원본 barcode만 사용
+
   showStatus("검색 중...", "info");
 
   // 현재 탭에서 작업 시작을 background에 알림
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tabId = tabs[0].id;
-    currentTabId = tabId; // 현재 탭 ID 업데이트
+    const tab = tabs[0];
+    const tabId = tab.id;
+    // 현재 탭 ID 업데이트
+    currentTabId = tabId; 
     chrome.runtime.sendMessage({ action: "start-work", tabId: tabId });
 
+    const url = tab.url || "";
+    if (url.startsWith("chrome://") || url.includes("chromewebstore.google.com")) {
+      showStatus("이 페이지에는 스크립트를 주입할 수 없습니다.", "error");
+      return;
+    }
+
     chrome.scripting.executeScript(
-      { target: { tabId }, files: ["content.js"] },
+      { target: { tabId, allFrames: true }, files: ["content.js"] },
       () => {
+        if (chrome.runtime.lastError) {
+          showStatus(`스크립트 주입 실패: ${chrome.runtime.lastError.message}`, "error");
+          return;
+        }
         chrome.tabs.sendMessage(
           tabId,
           { action: "search-barcode", barcode: barcode },
@@ -81,7 +97,10 @@ function searchBarcode() {
   });
 }
 
-// ====== [5] 검색 결과 처리 (조건별 분기) ======
+/**
+ * 콘텐츠 스크립트의 하이라이트 결과를 받아 UI와 카운트 갱신
+ * @param {{success: boolean|string, message: string}} highlightResponse - 검색 결과 응답
+ */
 function handleSearchResult(highlightResponse) {
   if (!highlightResponse) {
     showStatus(
@@ -112,7 +131,11 @@ function handleSearchResult(highlightResponse) {
   }
 }
 
-// ====== [6] 상태 메시지 표시 ======
+/**
+ * 상태 메시지를 표시
+ * @param {string} message - 표시할 메시지
+ * @param {'info'|'success'|'error'} [type='info'] - 메시지 유형
+ */
 function showStatus(message, type = "info") {
   const status = document.getElementById("status");
   status.textContent = message;
